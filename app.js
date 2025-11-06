@@ -9,6 +9,7 @@
 let comediens = [];
 let lieux = [];
 let sessionHistory = [];
+let batchVouchers = [];
 
 // ============================================================
 // INITIALIZATION
@@ -191,6 +192,26 @@ function initializeVoucherForm() {
     document.getElementById('reset-form').addEventListener('click', () => {
         resetVoucherForm();
     });
+
+    // Add to batch button
+    document.getElementById('add-to-batch').addEventListener('click', () => {
+        handleAddToBatch();
+    });
+
+    // Generate batch PDF button
+    document.getElementById('generate-batch-pdf').addEventListener('click', () => {
+        handleGenerateBatchPDF();
+    });
+
+    // Copy batch text button
+    document.getElementById('copy-batch-text').addEventListener('click', () => {
+        handleCopyBatchText();
+    });
+
+    // Clear batch button
+    document.getElementById('clear-batch').addEventListener('click', () => {
+        handleClearBatch();
+    });
 }
 
 function updateTrajetSections(trajetType) {
@@ -301,6 +322,10 @@ function getVoucherData() {
         arriveeAdresse = `${rue}, ${cp} ${ville}`;
     }
 
+    // Get generation options
+    const includeTitle = document.getElementById('include-title').checked;
+    const customTitle = document.getElementById('custom-title').value.trim();
+
     return {
         date: document.getElementById('date').value,
         prenom: comedien.prenom,
@@ -311,7 +336,9 @@ function getVoucherData() {
         departHeure: document.getElementById('depart-heure').value,
         arriveeAdresse: arriveeAdresse,
         arriveeHeure: document.getElementById('arrivee-heure').value,
-        precisions: document.getElementById('precisions').value
+        precisions: document.getElementById('precisions').value,
+        includeTitle: includeTitle,
+        customTitle: customTitle || null
     };
 }
 
@@ -746,6 +773,124 @@ function parseCSV(csvText) {
 }
 
 // ============================================================
+// BATCH PROCESSING (Multiple trips)
+// ============================================================
+
+function handleAddToBatch() {
+    const voucherData = getVoucherData();
+
+    // Add to batch
+    batchVouchers.push(voucherData);
+
+    // Show batch section
+    document.getElementById('batch-section').style.display = 'block';
+
+    // Render batch list
+    renderBatchList();
+
+    // Show notification
+    showNotification(`Trajet ajouté au lot (${batchVouchers.length} trajets)`);
+
+    // Reset form for next entry
+    resetVoucherForm();
+}
+
+function renderBatchList() {
+    const batchList = document.getElementById('batch-list');
+
+    if (batchVouchers.length === 0) {
+        batchList.innerHTML = '<p>Aucun trajet dans le lot</p>';
+        return;
+    }
+
+    batchList.innerHTML = batchVouchers.map((voucher, index) => `
+        <div style="padding: 0.75rem; margin-bottom: 0.5rem; background: white; border-radius: 4px; border-left: 4px solid #4a90e2; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <strong>${voucher.prenom} ${voucher.nom}</strong> - ${voucher.trajetType}
+                <br>
+                <small>Départ: ${formatTime(voucher.departHeure)}${voucher.arriveeHeure ? ' / Arrivée: ' + formatTime(voucher.arriveeHeure) : ''}</small>
+            </div>
+            <button class="btn btn-small btn-danger" onclick="removeBatchVoucher(${index})" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Retirer</button>
+        </div>
+    `).join('');
+}
+
+function removeBatchVoucher(index) {
+    batchVouchers.splice(index, 1);
+    renderBatchList();
+
+    if (batchVouchers.length === 0) {
+        document.getElementById('batch-section').style.display = 'none';
+    }
+
+    showNotification('Trajet retiré du lot');
+}
+
+function handleGenerateBatchPDF() {
+    if (batchVouchers.length === 0) {
+        showNotification('Aucun trajet dans le lot', true);
+        return;
+    }
+
+    const filename = generateBatchPDF(batchVouchers);
+
+    // Add all vouchers to session history
+    batchVouchers.forEach(voucher => {
+        sessionHistory.push({
+            ...voucher,
+            timestamp: new Date().toISOString()
+        });
+    });
+
+    showNotification(`PDF de lot généré : ${filename}`);
+
+    // Clear batch after generation
+    handleClearBatch();
+}
+
+function handleCopyBatchText() {
+    if (batchVouchers.length === 0) {
+        showNotification('Aucun trajet dans le lot', true);
+        return;
+    }
+
+    const text = generateBatchText(batchVouchers);
+
+    copyToClipboard(text).then(success => {
+        if (success) {
+            // Add all vouchers to session history
+            batchVouchers.forEach(voucher => {
+                sessionHistory.push({
+                    ...voucher,
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            showNotification('Texte du lot copié dans le presse-papier !');
+
+            // Clear batch after copying
+            handleClearBatch();
+        } else {
+            showNotification('Erreur lors de la copie', true);
+        }
+    });
+}
+
+function handleClearBatch() {
+    if (batchVouchers.length === 0) {
+        return;
+    }
+
+    if (!confirm('Êtes-vous sûr de vouloir vider le lot ?')) {
+        return;
+    }
+
+    batchVouchers = [];
+    document.getElementById('batch-section').style.display = 'none';
+    showNotification('Lot vidé');
+}
+
+// ============================================================
 // UTILITIES
 // ============================================================
 
@@ -778,3 +923,4 @@ window.editLieu = editLieu;
 window.deleteLieu = deleteLieu;
 window.regeneratePDF = regeneratePDF;
 window.recopyText = recopyText;
+window.removeBatchVoucher = removeBatchVoucher;

@@ -47,16 +47,19 @@ function generatePDF(voucherData) {
     doc.setLineWidth(0.5);
     doc.rect(margin - 5, margin - 5, contentWidth + 10, pageHeight - (2 * margin) + 10);
 
-    // Title
-    doc.setFontSize(18);
-    doc.setFont(undefined, 'bold');
-    doc.text('BON DE TRANSPORT COMÉDIEN', margin, yPos);
-    yPos += lineHeight;
+    // Title (optional)
+    if (voucherData.includeTitle !== false) {
+        const title = voucherData.customTitle || 'BON DE TRANSPORT COMÉDIEN';
+        doc.setFontSize(18);
+        doc.setFont(undefined, 'bold');
+        doc.text(title, margin, yPos);
+        yPos += lineHeight;
 
-    doc.setFontSize(14);
-    doc.setFont(undefined, 'normal');
-    doc.text('Production KRAKEN', margin, yPos);
-    yPos += lineHeight + sectionGap;
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'normal');
+        doc.text('Production KRAKEN', margin, yPos);
+        yPos += lineHeight + sectionGap;
+    }
 
     // Separator line
     doc.setDrawColor(200, 200, 200);
@@ -104,7 +107,14 @@ function generatePDF(voucherData) {
     doc.setFont(undefined, 'bold');
     doc.text('ARRIVÉE  : ', margin, yPos);
     doc.setFont(undefined, 'normal');
-    const arriveeDateTime = `${formatDate(voucherData.date)} à ${formatTime(voucherData.arriveeHeure)}`;
+
+    // Handle optional arrival time
+    let arriveeDateTime;
+    if (voucherData.arriveeHeure) {
+        arriveeDateTime = `${formatDate(voucherData.date)} à ${formatTime(voucherData.arriveeHeure)}`;
+    } else {
+        arriveeDateTime = formatDate(voucherData.date);
+    }
     doc.text(arriveeDateTime, margin + 30, yPos);
     yPos += lineHeight;
 
@@ -144,7 +154,14 @@ function generatePDF(voucherData) {
  * Generate text version for clipboard
  */
 function generateText(voucherData) {
-    let text = 'BON DE TRANSPORT - KRAKEN\n';
+    let text = '';
+
+    // Optional title
+    if (voucherData.includeTitle !== false) {
+        const title = voucherData.customTitle || 'BON DE TRANSPORT - KRAKEN';
+        text += title + '\n';
+    }
+
     text += `Date: ${formatDate(voucherData.date)}\n\n`;
 
     text += `Passager: ${voucherData.prenom} ${voucherData.nom}\n`;
@@ -155,12 +172,169 @@ function generateText(voucherData) {
     text += `Départ: ${formatDate(voucherData.date)} à ${formatTime(voucherData.departHeure)}\n`;
     text += `        ${voucherData.departAdresse}\n\n`;
 
-    text += `Arrivée: ${formatDate(voucherData.date)} à ${formatTime(voucherData.arriveeHeure)}\n`;
+    // Handle optional arrival time
+    if (voucherData.arriveeHeure) {
+        text += `Arrivée: ${formatDate(voucherData.date)} à ${formatTime(voucherData.arriveeHeure)}\n`;
+    } else {
+        text += `Arrivée: ${formatDate(voucherData.date)}\n`;
+    }
     text += `         ${voucherData.arriveeAdresse}\n`;
 
     if (voucherData.precisions && voucherData.precisions.trim()) {
         text += `\nPrécisions:\n${voucherData.precisions}\n`;
     }
+
+    return text;
+}
+
+/**
+ * Generate PDF for multiple trips (batch)
+ */
+function generateBatchPDF(vouchersData) {
+    const { jsPDF } = window.jspdf;
+
+    // A5 Landscape dimensions in mm
+    const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a5'
+    });
+
+    const pageWidth = 210;
+    const pageHeight = 148;
+    const margin = 15;
+    const contentWidth = pageWidth - (2 * margin);
+
+    vouchersData.forEach((voucherData, index) => {
+        if (index > 0) {
+            doc.addPage();
+        }
+
+        let yPos = margin;
+        const lineHeight = 7;
+        const sectionGap = 5;
+
+        // Draw border
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.5);
+        doc.rect(margin - 5, margin - 5, contentWidth + 10, pageHeight - (2 * margin) + 10);
+
+        // Title (optional)
+        if (voucherData.includeTitle !== false) {
+            const title = voucherData.customTitle || 'BON DE TRANSPORT COMÉDIEN';
+            doc.setFontSize(18);
+            doc.setFont(undefined, 'bold');
+            doc.text(title, margin, yPos);
+            yPos += lineHeight;
+
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'normal');
+            doc.text('Production KRAKEN', margin, yPos);
+            yPos += lineHeight + sectionGap;
+        }
+
+        // Separator line
+        doc.setDrawColor(200, 200, 200);
+        doc.line(margin, yPos, pageWidth - margin, yPos);
+        yPos += sectionGap;
+
+        // Date
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('Date : ', margin, yPos);
+        doc.setFont(undefined, 'normal');
+        doc.text(formatDate(voucherData.date), margin + 20, yPos);
+        yPos += lineHeight + sectionGap;
+
+        // Passenger info
+        doc.setFont(undefined, 'bold');
+        doc.text('PASSAGER : ', margin, yPos);
+        doc.setFont(undefined, 'normal');
+        doc.text(`${voucherData.prenom} ${voucherData.nom}`, margin + 30, yPos);
+        yPos += lineHeight;
+
+        doc.setFont(undefined, 'bold');
+        doc.text('Contact  : ', margin, yPos);
+        doc.setFont(undefined, 'normal');
+        doc.text(voucherData.telephone, margin + 30, yPos);
+        yPos += lineHeight + sectionGap;
+
+        // Departure info
+        doc.setFont(undefined, 'bold');
+        doc.text('DÉPART   : ', margin, yPos);
+        doc.setFont(undefined, 'normal');
+        const departDateTime = `${formatDate(voucherData.date)} à ${formatTime(voucherData.departHeure)}`;
+        doc.text(departDateTime, margin + 30, yPos);
+        yPos += lineHeight;
+
+        // Departure address
+        const departLines = doc.splitTextToSize(voucherData.departAdresse, contentWidth - 30);
+        departLines.forEach(line => {
+            doc.text(line, margin + 30, yPos);
+            yPos += lineHeight;
+        });
+        yPos += sectionGap;
+
+        // Arrival info
+        doc.setFont(undefined, 'bold');
+        doc.text('ARRIVÉE  : ', margin, yPos);
+        doc.setFont(undefined, 'normal');
+
+        let arriveeDateTime;
+        if (voucherData.arriveeHeure) {
+            arriveeDateTime = `${formatDate(voucherData.date)} à ${formatTime(voucherData.arriveeHeure)}`;
+        } else {
+            arriveeDateTime = formatDate(voucherData.date);
+        }
+        doc.text(arriveeDateTime, margin + 30, yPos);
+        yPos += lineHeight;
+
+        // Arrival address
+        const arriveeLines = doc.splitTextToSize(voucherData.arriveeAdresse, contentWidth - 30);
+        arriveeLines.forEach(line => {
+            doc.text(line, margin + 30, yPos);
+            yPos += lineHeight;
+        });
+        yPos += sectionGap;
+
+        // Special instructions
+        if (voucherData.precisions && voucherData.precisions.trim()) {
+            doc.setFont(undefined, 'bold');
+            doc.text('PRÉCISIONS :', margin, yPos);
+            yPos += lineHeight;
+
+            doc.setFont(undefined, 'normal');
+            const precisionLines = doc.splitTextToSize(voucherData.precisions, contentWidth);
+            precisionLines.forEach(line => {
+                doc.text(line, margin, yPos);
+                yPos += lineHeight;
+            });
+        }
+    });
+
+    // Generate filename
+    const dateForFile = vouchersData[0].date.replace(/-/g, '');
+    const filename = `Bons_Transport_${dateForFile}_${vouchersData.length}trajets.pdf`;
+
+    // Save PDF
+    doc.save(filename);
+
+    return filename;
+}
+
+/**
+ * Generate text version for multiple trips (batch)
+ */
+function generateBatchText(vouchersData) {
+    let text = '';
+
+    vouchersData.forEach((voucherData, index) => {
+        if (index > 0) {
+            text += '\n\n' + '='.repeat(60) + '\n\n';
+        }
+
+        text += generateText(voucherData);
+    });
 
     return text;
 }
