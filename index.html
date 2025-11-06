@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Bons de Transport - KRAKEN</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Générateur de Bons de Transport</h1>
+            <p class="subtitle">Production KRAKEN</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="nouveau-bon">Nouveau bon</button>
+            <button class="tab-btn" data-tab="comediens">Comédiens</button>
+            <button class="tab-btn" data-tab="lieux">Lieux</button>
+            <button class="tab-btn" data-tab="historique">Historique</button>
+        </nav>
+
+        <!-- TAB: NOUVEAU BON -->
+        <div id="nouveau-bon" class="tab-content active">
+            <h2>Créer un bon de transport</h2>
+            <form id="voucher-form">
+                <!-- SECTION GÉNÉRALE -->
+                <div class="form-section">
+                    <h3>Informations générales</h3>
+
+                    <div class="form-group">
+                        <label for="date">Date *</label>
+                        <input type="date" id="date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="comedien">Comédien *</label>
+                        <select id="comedien" required>
+                            <option value="">Sélectionnez un comédien</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="telephone">Téléphone</label>
+                        <input type="tel" id="telephone" readonly>
+                    </div>
+                </div>
+
+                <!-- SECTION TRAJET -->
+                <div class="form-section">
+                    <h3>Type de trajet</h3>
+
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="trajet-type" value="ALLER" checked>
+                            <span>ALLER</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="trajet-type" value="RETOUR">
+                            <span>RETOUR</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- SECTION DÉPART -->
+                <div class="form-section">
+                    <h3>Départ</h3>
+
+                    <div id="depart-aller" class="trajet-section">
+                        <div class="form-group">
+                            <label for="depart-adresse">Adresse de départ *</label>
+                            <input type="text" id="depart-adresse" placeholder="Rue" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="depart-cp" placeholder="Code postal" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="depart-ville" placeholder="Ville" required>
+                        </div>
+                    </div>
+
+                    <div id="depart-retour" class="trajet-section" style="display: none;">
+                        <div class="form-group">
+                            <label for="depart-lieu">Lieu de départ *</label>
+                            <select id="depart-lieu" required>
+                                <option value="">Sélectionnez un lieu</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="depart-lieu-autre" style="display: none;">
+                            <label for="depart-lieu-texte">Lieu personnalisé</label>
+                            <input type="text" id="depart-lieu-texte" placeholder="Nom du lieu">
+                            <input type="text" id="depart-lieu-adresse" placeholder="Adresse complète">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="depart-heure">Heure de départ *</label>
+                        <input type="time" id="depart-heure" required>
+                    </div>
+                </div>
+
+                <!-- SECTION ARRIVÉE -->
+                <div class="form-section">
+                    <h3>Arrivée</h3>
+
+                    <div id="arrivee-aller" class="trajet-section">
+                        <div class="form-group">
+                            <label for="arrivee-lieu">Lieu d'arrivée *</label>
+                            <select id="arrivee-lieu" required>
+                                <option value="">Sélectionnez un lieu</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="arrivee-lieu-autre" style="display: none;">
+                            <label for="arrivee-lieu-texte">Lieu personnalisé</label>
+                            <input type="text" id="arrivee-lieu-texte" placeholder="Nom du lieu">
+                            <input type="text" id="arrivee-lieu-adresse" placeholder="Adresse complète">
+                        </div>
+                    </div>
+
+                    <div id="arrivee-retour" class="trajet-section" style="display: none;">
+                        <div class="form-group">
+                            <label for="arrivee-adresse">Adresse d'arrivée *</label>
+                            <input type="text" id="arrivee-adresse" placeholder="Rue" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="arrivee-cp" placeholder="Code postal" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="arrivee-ville" placeholder="Ville" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="arrivee-heure">Heure d'arrivée *</label>
+                        <input type="time" id="arrivee-heure" required>
+                    </div>
+                </div>
+
+                <!-- SECTION PRÉCISIONS -->
+                <div class="form-section">
+                    <h3>Précisions</h3>
+                    <div class="form-group">
+                        <label for="precisions">Instructions pour le chauffeur (optionnel)</label>
+                        <textarea id="precisions" rows="4" placeholder="Ne pas klaxonner, code porte, etc."></textarea>
+                    </div>
+                </div>
+
+                <!-- ACTIONS -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Générer PDF</button>
+                    <button type="button" class="btn btn-secondary" id="copy-text">Copier Texte</button>
+                    <button type="button" class="btn btn-outline" id="reset-form">Nouveau Bon</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- TAB: COMÉDIENS -->
+        <div id="comediens" class="tab-content">
+            <h2>Gestion des comédiens</h2>
+
+            <div class="actions-bar">
+                <button class="btn btn-primary" id="add-comedien">Ajouter un comédien</button>
+                <button class="btn btn-secondary" id="import-comediens">Importer Excel</button>
+                <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display: none;">
+                <input type="text" id="search-comedien" placeholder="Rechercher par nom...">
+            </div>
+
+            <div id="comediens-list" class="data-list"></div>
+
+            <!-- Modal Ajout/Edition Comédien -->
+            <div id="comedien-modal" class="modal">
+                <div class="modal-content">
+                    <h3 id="comedien-modal-title">Ajouter un comédien</h3>
+                    <form id="comedien-form">
+                        <input type="hidden" id="comedien-id">
+
+                        <div class="form-group">
+                            <label for="comedien-prenom">Prénom *</label>
+                            <input type="text" id="comedien-prenom" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="comedien-nom">NOM *</label>
+                            <input type="text" id="comedien-nom" required style="text-transform: uppercase;">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="comedien-tel">Téléphone *</label>
+                            <input type="tel" id="comedien-tel" required placeholder="06 XX XX XX XX">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="comedien-adresse">Adresse *</label>
+                            <input type="text" id="comedien-adresse" required placeholder="Rue">
+                        </div>
+
+                        <div class="form-group">
+                            <input type="text" id="comedien-cp" required placeholder="Code postal">
+                        </div>
+
+                        <div class="form-group">
+                            <input type="text" id="comedien-ville" required placeholder="Ville">
+                        </div>
+
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">Enregistrer</button>
+                            <button type="button" class="btn btn-outline" id="close-comedien-modal">Annuler</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: LIEUX -->
+        <div id="lieux" class="tab-content">
+            <h2>Gestion des lieux</h2>
+
+            <div class="actions-bar">
+                <button class="btn btn-primary" id="add-lieu">Ajouter un lieu</button>
+            </div>
+
+            <div id="lieux-list" class="data-list"></div>
+
+            <!-- Modal Ajout/Edition Lieu -->
+            <div id="lieu-modal" class="modal">
+                <div class="modal-content">
+                    <h3 id="lieu-modal-title">Ajouter un lieu</h3>
+                    <form id="lieu-form">
+                        <input type="hidden" id="lieu-id">
+
+                        <div class="form-group">
+                            <label for="lieu-nom">Nom du lieu *</label>
+                            <input type="text" id="lieu-nom" required placeholder="Ex: Grigny - Cantine">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="lieu-adresse">Adresse complète *</label>
+                            <textarea id="lieu-adresse" required rows="3" placeholder="Rue, Code postal, Ville"></textarea>
+                        </div>
+
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">Enregistrer</button>
+                            <button type="button" class="btn btn-outline" id="close-lieu-modal">Annuler</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: HISTORIQUE -->
+        <div id="historique" class="tab-content">
+            <h2>Historique de la session</h2>
+            <div id="historique-list" class="data-list">
+                <p class="empty-state">Aucun bon créé dans cette session.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script src="export.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
