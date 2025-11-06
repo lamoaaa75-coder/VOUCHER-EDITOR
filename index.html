@@ -132,8 +132,8 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="arrivee-heure">Heure d'arrivée *</label>
-                        <input type="time" id="arrivee-heure" required>
+                        <label for="arrivee-heure">Heure d'arrivée (optionnel)</label>
+                        <input type="time" id="arrivee-heure">
                     </div>
                 </div>
 
@@ -146,12 +146,45 @@
                     </div>
                 </div>
 
+                <!-- SECTION OPTIONS DE GÉNÉRATION -->
+                <div class="form-section">
+                    <h3>Options de génération</h3>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="include-title" checked>
+                            Inclure le titre "BON DE TRANSPORT KRAKEN"
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="custom-title">Titre personnalisé (optionnel)</label>
+                        <input type="text" id="custom-title" placeholder="Ex: BON DE TRANSPORT COMÉDIEN">
+                    </div>
+                </div>
+
                 <!-- ACTIONS -->
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Générer PDF</button>
                     <button type="button" class="btn btn-secondary" id="copy-text">Copier Texte</button>
                     <button type="button" class="btn btn-outline" id="reset-form">Nouveau Bon</button>
+                    <button type="button" class="btn btn-outline" id="add-to-batch">Ajouter à un lot</button>
                 </div>
+            </form>
+
+            <!-- Section pour les lots de trajets -->
+            <div id="batch-section" style="display: none; margin-top: 2rem; padding: 1.5rem; border: 2px solid #4a90e2; border-radius: 8px; background-color: #f8f9fa;">
+                <h3>Lot de trajets pour la même journée</h3>
+                <div id="batch-list" style="margin-bottom: 1rem;"></div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary" id="generate-batch-pdf">Générer PDF du lot</button>
+                    <button type="button" class="btn btn-secondary" id="copy-batch-text">Copier texte du lot</button>
+                    <button type="button" class="btn btn-outline" id="clear-batch">Vider le lot</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: NOUVEAU BON (suite cachée) -->
+        <div style="display: none;">
+            <form id="hidden-continue">
             </form>
         </div>
 
