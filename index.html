@@ -174,7 +174,18 @@
             <div id="batch-section" style="display: none; margin-top: 2rem; padding: 1.5rem; border: 2px solid #4a90e2; border-radius: 8px; background-color: #f8f9fa;">
                 <h3>Lot de trajets pour la même journée</h3>
                 <div id="batch-list" style="margin-bottom: 1rem;"></div>
+
+                <!-- Preview section -->
+                <div id="batch-preview-section" style="display: none; margin-bottom: 1rem; padding: 1rem; background: white; border-radius: 4px; border: 1px solid #ddd;">
+                    <h4 style="margin-top: 0; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                        <span>Prévisualisation</span>
+                        <button type="button" class="btn btn-small btn-outline" id="close-preview" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Fermer</button>
+                    </h4>
+                    <pre id="batch-preview-text" style="white-space: pre-wrap; font-family: monospace; font-size: 0.9rem; line-height: 1.5; margin: 0; max-height: 400px; overflow-y: auto;"></pre>
+                </div>
+
                 <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="preview-batch">Prévisualiser</button>
                     <button type="button" class="btn btn-primary" id="generate-batch-pdf">Générer PDF du lot</button>
                     <button type="button" class="btn btn-secondary" id="copy-batch-text">Copier texte du lot</button>
                     <button type="button" class="btn btn-outline" id="clear-batch">Vider le lot</button>

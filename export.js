@@ -12,6 +12,14 @@ function formatDate(dateString) {
     return `${day}/${month}/${year}`;
 }
 
+// Format date to DD/MM (without year)
+function formatDateShort(dateString) {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    return `${day}/${month}`;
+}
+
 // Format time to HH:MM
 function formatTime(timeString) {
     if (!timeString) return '';
@@ -20,7 +28,7 @@ function formatTime(timeString) {
 }
 
 /**
- * Generate PDF for transport voucher
+ * Generate PDF for transport voucher - SIMPLIFIED FORMAT
  * Format: A5 Landscape (210mm x 148mm)
  */
 function generatePDF(voucherData) {
@@ -38,101 +46,76 @@ function generatePDF(voucherData) {
     const margin = 15;
     const contentWidth = pageWidth - (2 * margin);
 
-    let yPos = margin;
-    const lineHeight = 7;
-    const sectionGap = 5;
+    let yPos = margin + 10;
+    const lineHeight = 8;
 
     // Draw border
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.5);
     doc.rect(margin - 5, margin - 5, contentWidth + 10, pageHeight - (2 * margin) + 10);
 
-    // Title (optional)
-    if (voucherData.includeTitle !== false) {
-        const title = voucherData.customTitle || 'BON DE TRANSPORT COMÉDIEN';
-        doc.setFontSize(18);
+    // Optional title
+    if (voucherData.includeTitle !== false && voucherData.customTitle) {
+        doc.setFontSize(16);
         doc.setFont(undefined, 'bold');
-        doc.text(title, margin, yPos);
-        yPos += lineHeight;
-
-        doc.setFontSize(14);
-        doc.setFont(undefined, 'normal');
-        doc.text('Production KRAKEN', margin, yPos);
-        yPos += lineHeight + sectionGap;
+        doc.text(voucherData.customTitle, margin, yPos);
+        yPos += lineHeight + 3;
     }
 
-    // Separator line
-    doc.setDrawColor(200, 200, 200);
-    doc.line(margin, yPos, pageWidth - margin, yPos);
-    yPos += sectionGap;
-
-    // Date
+    // Content
     doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text('Date : ', margin, yPos);
-    doc.setFont(undefined, 'normal');
-    doc.text(formatDate(voucherData.date), margin + 20, yPos);
-    yPos += lineHeight + sectionGap;
 
-    // Passenger info
+    // Passenger
     doc.setFont(undefined, 'bold');
-    doc.text('PASSAGER : ', margin, yPos);
+    doc.text('Passager: ', margin, yPos);
     doc.setFont(undefined, 'normal');
-    doc.text(`${voucherData.prenom} ${voucherData.nom}`, margin + 30, yPos);
+    doc.text(`${voucherData.prenom} ${voucherData.nom}`, margin + 25, yPos);
     yPos += lineHeight;
 
+    // Contact
     doc.setFont(undefined, 'bold');
-    doc.text('Contact  : ', margin, yPos);
+    doc.text('Contact: ', margin, yPos);
     doc.setFont(undefined, 'normal');
-    doc.text(voucherData.telephone, margin + 30, yPos);
-    yPos += lineHeight + sectionGap;
-
-    // Departure info
-    doc.setFont(undefined, 'bold');
-    doc.text('DÉPART   : ', margin, yPos);
-    doc.setFont(undefined, 'normal');
-    const departDateTime = `${formatDate(voucherData.date)} à ${formatTime(voucherData.departHeure)}`;
-    doc.text(departDateTime, margin + 30, yPos);
+    doc.text(voucherData.telephone, margin + 25, yPos);
     yPos += lineHeight;
 
-    // Departure address (split into multiple lines if needed)
-    const departLines = doc.splitTextToSize(voucherData.departAdresse, contentWidth - 30);
-    departLines.forEach(line => {
-        doc.text(line, margin + 30, yPos);
-        yPos += lineHeight;
-    });
-    yPos += sectionGap;
-
-    // Arrival info
+    // Departure
     doc.setFont(undefined, 'bold');
-    doc.text('ARRIVÉE  : ', margin, yPos);
+    doc.text('Départ: ', margin, yPos);
     doc.setFont(undefined, 'normal');
-
-    // Handle optional arrival time
-    let arriveeDateTime;
-    if (voucherData.arriveeHeure) {
-        arriveeDateTime = `${formatDate(voucherData.date)} à ${formatTime(voucherData.arriveeHeure)}`;
-    } else {
-        arriveeDateTime = formatDate(voucherData.date);
+    const departText = `${formatDateShort(voucherData.date)} à ${formatTime(voucherData.departHeure)} au ${voucherData.departAdresse.replace(/\n/g, ', ')}`;
+    const departLines = doc.splitTextToSize(departText, contentWidth - 25);
+    doc.text(departLines[0], margin + 25, yPos);
+    yPos += lineHeight;
+    if (departLines.length > 1) {
+        for (let i = 1; i < departLines.length; i++) {
+            doc.text(departLines[i], margin + 25, yPos);
+            yPos += lineHeight;
+        }
     }
-    doc.text(arriveeDateTime, margin + 30, yPos);
-    yPos += lineHeight;
 
-    // Arrival address (split into multiple lines if needed)
-    const arriveeLines = doc.splitTextToSize(voucherData.arriveeAdresse, contentWidth - 30);
-    arriveeLines.forEach(line => {
-        doc.text(line, margin + 30, yPos);
-        yPos += lineHeight;
-    });
-    yPos += sectionGap;
+    // Arrival
+    doc.setFont(undefined, 'bold');
+    doc.text('Arrivée: ', margin, yPos);
+    doc.setFont(undefined, 'normal');
+    let arriveeText;
+    if (voucherData.arriveeHeure) {
+        arriveeText = `${formatDateShort(voucherData.date)} à ${formatTime(voucherData.arriveeHeure)} au ${voucherData.arriveeAdresse.replace(/\n/g, ', ')}`;
+    } else {
+        arriveeText = voucherData.arriveeAdresse.replace(/\n/g, ', ');
+    }
+    const arriveeLines = doc.splitTextToSize(arriveeText, contentWidth - 25);
+    doc.text(arriveeLines[0], margin + 25, yPos);
+    yPos += lineHeight;
+    if (arriveeLines.length > 1) {
+        for (let i = 1; i < arriveeLines.length; i++) {
+            doc.text(arriveeLines[i], margin + 25, yPos);
+            yPos += lineHeight;
+        }
+    }
 
     // Special instructions
     if (voucherData.precisions && voucherData.precisions.trim()) {
-        doc.setFont(undefined, 'bold');
-        doc.text('PRÉCISIONS :', margin, yPos);
-        yPos += lineHeight;
-
-        doc.setFont(undefined, 'normal');
         const precisionLines = doc.splitTextToSize(voucherData.precisions, contentWidth);
         precisionLines.forEach(line => {
             doc.text(line, margin, yPos);
@@ -151,44 +134,38 @@ function generatePDF(voucherData) {
 }
 
 /**
- * Generate text version for clipboard
+ * Generate text version for clipboard - SIMPLIFIED FORMAT
  */
 function generateText(voucherData) {
     let text = '';
 
     // Optional title
-    if (voucherData.includeTitle !== false) {
-        const title = voucherData.customTitle || 'BON DE TRANSPORT - KRAKEN';
-        text += title + '\n';
+    if (voucherData.includeTitle !== false && voucherData.customTitle) {
+        text += voucherData.customTitle + '\n\n';
     }
-
-    text += `Date: ${formatDate(voucherData.date)}\n\n`;
 
     text += `Passager: ${voucherData.prenom} ${voucherData.nom}\n`;
-    text += `Contact: ${voucherData.telephone}\n\n`;
+    text += `Contact: ${voucherData.telephone}\n`;
 
-    text += `TRAJET ${voucherData.trajetType}\n`;
+    // Departure
+    text += `Départ: ${formatDateShort(voucherData.date)} à ${formatTime(voucherData.departHeure)} au ${voucherData.departAdresse.replace(/\n/g, ', ')}\n`;
 
-    text += `Départ: ${formatDate(voucherData.date)} à ${formatTime(voucherData.departHeure)}\n`;
-    text += `        ${voucherData.departAdresse}\n\n`;
-
-    // Handle optional arrival time
+    // Arrival
     if (voucherData.arriveeHeure) {
-        text += `Arrivée: ${formatDate(voucherData.date)} à ${formatTime(voucherData.arriveeHeure)}\n`;
+        text += `Arrivée: ${formatDateShort(voucherData.date)} à ${formatTime(voucherData.arriveeHeure)} au ${voucherData.arriveeAdresse.replace(/\n/g, ', ')}`;
     } else {
-        text += `Arrivée: ${formatDate(voucherData.date)}\n`;
+        text += `Arrivée: ${voucherData.arriveeAdresse.replace(/\n/g, ', ')}`;
     }
-    text += `         ${voucherData.arriveeAdresse}\n`;
 
     if (voucherData.precisions && voucherData.precisions.trim()) {
-        text += `\nPrécisions:\n${voucherData.precisions}\n`;
+        text += `\n${voucherData.precisions}`;
     }
 
     return text;
 }
 
 /**
- * Generate PDF for multiple trips (batch)
+ * Generate PDF for multiple trips (batch) - SIMPLIFIED FORMAT
  */
 function generateBatchPDF(vouchersData) {
     const { jsPDF } = window.jspdf;
@@ -210,100 +187,76 @@ function generateBatchPDF(vouchersData) {
             doc.addPage();
         }
 
-        let yPos = margin;
-        const lineHeight = 7;
-        const sectionGap = 5;
+        let yPos = margin + 10;
+        const lineHeight = 8;
 
         // Draw border
         doc.setDrawColor(0, 0, 0);
         doc.setLineWidth(0.5);
         doc.rect(margin - 5, margin - 5, contentWidth + 10, pageHeight - (2 * margin) + 10);
 
-        // Title (optional)
-        if (voucherData.includeTitle !== false) {
-            const title = voucherData.customTitle || 'BON DE TRANSPORT COMÉDIEN';
-            doc.setFontSize(18);
+        // Optional title
+        if (voucherData.includeTitle !== false && voucherData.customTitle) {
+            doc.setFontSize(16);
             doc.setFont(undefined, 'bold');
-            doc.text(title, margin, yPos);
-            yPos += lineHeight;
-
-            doc.setFontSize(14);
-            doc.setFont(undefined, 'normal');
-            doc.text('Production KRAKEN', margin, yPos);
-            yPos += lineHeight + sectionGap;
+            doc.text(voucherData.customTitle, margin, yPos);
+            yPos += lineHeight + 3;
         }
 
-        // Separator line
-        doc.setDrawColor(200, 200, 200);
-        doc.line(margin, yPos, pageWidth - margin, yPos);
-        yPos += sectionGap;
-
-        // Date
+        // Content
         doc.setFontSize(12);
-        doc.setFont(undefined, 'bold');
-        doc.text('Date : ', margin, yPos);
-        doc.setFont(undefined, 'normal');
-        doc.text(formatDate(voucherData.date), margin + 20, yPos);
-        yPos += lineHeight + sectionGap;
 
-        // Passenger info
+        // Passenger
         doc.setFont(undefined, 'bold');
-        doc.text('PASSAGER : ', margin, yPos);
+        doc.text('Passager: ', margin, yPos);
         doc.setFont(undefined, 'normal');
-        doc.text(`${voucherData.prenom} ${voucherData.nom}`, margin + 30, yPos);
+        doc.text(`${voucherData.prenom} ${voucherData.nom}`, margin + 25, yPos);
         yPos += lineHeight;
 
+        // Contact
         doc.setFont(undefined, 'bold');
-        doc.text('Contact  : ', margin, yPos);
+        doc.text('Contact: ', margin, yPos);
         doc.setFont(undefined, 'normal');
-        doc.text(voucherData.telephone, margin + 30, yPos);
-        yPos += lineHeight + sectionGap;
-
-        // Departure info
-        doc.setFont(undefined, 'bold');
-        doc.text('DÉPART   : ', margin, yPos);
-        doc.setFont(undefined, 'normal');
-        const departDateTime = `${formatDate(voucherData.date)} à ${formatTime(voucherData.departHeure)}`;
-        doc.text(departDateTime, margin + 30, yPos);
+        doc.text(voucherData.telephone, margin + 25, yPos);
         yPos += lineHeight;
 
-        // Departure address
-        const departLines = doc.splitTextToSize(voucherData.departAdresse, contentWidth - 30);
-        departLines.forEach(line => {
-            doc.text(line, margin + 30, yPos);
-            yPos += lineHeight;
-        });
-        yPos += sectionGap;
-
-        // Arrival info
+        // Departure
         doc.setFont(undefined, 'bold');
-        doc.text('ARRIVÉE  : ', margin, yPos);
+        doc.text('Départ: ', margin, yPos);
         doc.setFont(undefined, 'normal');
-
-        let arriveeDateTime;
-        if (voucherData.arriveeHeure) {
-            arriveeDateTime = `${formatDate(voucherData.date)} à ${formatTime(voucherData.arriveeHeure)}`;
-        } else {
-            arriveeDateTime = formatDate(voucherData.date);
+        const departText = `${formatDateShort(voucherData.date)} à ${formatTime(voucherData.departHeure)} au ${voucherData.departAdresse.replace(/\n/g, ', ')}`;
+        const departLines = doc.splitTextToSize(departText, contentWidth - 25);
+        doc.text(departLines[0], margin + 25, yPos);
+        yPos += lineHeight;
+        if (departLines.length > 1) {
+            for (let i = 1; i < departLines.length; i++) {
+                doc.text(departLines[i], margin + 25, yPos);
+                yPos += lineHeight;
+            }
         }
-        doc.text(arriveeDateTime, margin + 30, yPos);
-        yPos += lineHeight;
 
-        // Arrival address
-        const arriveeLines = doc.splitTextToSize(voucherData.arriveeAdresse, contentWidth - 30);
-        arriveeLines.forEach(line => {
-            doc.text(line, margin + 30, yPos);
-            yPos += lineHeight;
-        });
-        yPos += sectionGap;
+        // Arrival
+        doc.setFont(undefined, 'bold');
+        doc.text('Arrivée: ', margin, yPos);
+        doc.setFont(undefined, 'normal');
+        let arriveeText;
+        if (voucherData.arriveeHeure) {
+            arriveeText = `${formatDateShort(voucherData.date)} à ${formatTime(voucherData.arriveeHeure)} au ${voucherData.arriveeAdresse.replace(/\n/g, ', ')}`;
+        } else {
+            arriveeText = voucherData.arriveeAdresse.replace(/\n/g, ', ');
+        }
+        const arriveeLines = doc.splitTextToSize(arriveeText, contentWidth - 25);
+        doc.text(arriveeLines[0], margin + 25, yPos);
+        yPos += lineHeight;
+        if (arriveeLines.length > 1) {
+            for (let i = 1; i < arriveeLines.length; i++) {
+                doc.text(arriveeLines[i], margin + 25, yPos);
+                yPos += lineHeight;
+            }
+        }
 
         // Special instructions
         if (voucherData.precisions && voucherData.precisions.trim()) {
-            doc.setFont(undefined, 'bold');
-            doc.text('PRÉCISIONS :', margin, yPos);
-            yPos += lineHeight;
-
-            doc.setFont(undefined, 'normal');
             const precisionLines = doc.splitTextToSize(voucherData.precisions, contentWidth);
             precisionLines.forEach(line => {
                 doc.text(line, margin, yPos);

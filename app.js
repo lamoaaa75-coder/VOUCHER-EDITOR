@@ -212,6 +212,16 @@ function initializeVoucherForm() {
     document.getElementById('clear-batch').addEventListener('click', () => {
         handleClearBatch();
     });
+
+    // Preview batch button
+    document.getElementById('preview-batch').addEventListener('click', () => {
+        handlePreviewBatch();
+    });
+
+    // Close preview button
+    document.getElementById('close-preview').addEventListener('click', () => {
+        handleClosePreview();
+    });
 }
 
 function updateTrajetSections(trajetType) {
@@ -668,10 +678,9 @@ function renderHistory() {
         <div class="history-item">
             <div class="history-header">
                 <h4>${item.prenom} ${item.nom}</h4>
-                <span class="history-badge">${item.trajetType}</span>
             </div>
             <div class="history-details">
-                ${formatDate(item.date)} - Départ: ${formatTime(item.departHeure)} / Arrivée: ${formatTime(item.arriveeHeure)}
+                ${formatDate(item.date)} - Départ: ${formatTime(item.departHeure)}${item.arriveeHeure ? ' / Arrivée: ' + formatTime(item.arriveeHeure) : ''}
             </div>
             <div class="history-actions">
                 <button class="btn btn-small btn-primary" onclick="regeneratePDF(${sessionHistory.length - 1 - index})">Générer PDF</button>
@@ -806,7 +815,7 @@ function renderBatchList() {
     batchList.innerHTML = batchVouchers.map((voucher, index) => `
         <div style="padding: 0.75rem; margin-bottom: 0.5rem; background: white; border-radius: 4px; border-left: 4px solid #4a90e2; display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <strong>${voucher.prenom} ${voucher.nom}</strong> - ${voucher.trajetType}
+                <strong>${voucher.prenom} ${voucher.nom}</strong>
                 <br>
                 <small>Départ: ${formatTime(voucher.departHeure)}${voucher.arriveeHeure ? ' / Arrivée: ' + formatTime(voucher.arriveeHeure) : ''}</small>
             </div>
@@ -887,7 +896,23 @@ function handleClearBatch() {
 
     batchVouchers = [];
     document.getElementById('batch-section').style.display = 'none';
+    document.getElementById('batch-preview-section').style.display = 'none';
     showNotification('Lot vidé');
+}
+
+function handlePreviewBatch() {
+    if (batchVouchers.length === 0) {
+        showNotification('Aucun trajet dans le lot', true);
+        return;
+    }
+
+    const text = generateBatchText(batchVouchers);
+    document.getElementById('batch-preview-text').textContent = text;
+    document.getElementById('batch-preview-section').style.display = 'block';
+}
+
+function handleClosePreview() {
+    document.getElementById('batch-preview-section').style.display = 'none';
 }
 
 // ============================================================
